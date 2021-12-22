@@ -158,7 +158,8 @@ def sample_mean_from_discretized_mix_logistic(l, nr_mix):
 
 
 def distortion_mse_loss(x, l):
-    return torch.mean(torch.square(x - l), dim=[1, 2, 3])
+    noise = torch.empty(x.shape, device=x.device).uniform_(-1, 1) / 127.5
+    return torch.mean(torch.square(x + noise - l), dim=[1, 2, 3])
 
 
 def sample_distortion_loss(l):
