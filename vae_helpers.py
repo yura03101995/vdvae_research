@@ -158,7 +158,7 @@ def sample_mean_from_discretized_mix_logistic(l, nr_mix):
 
 
 def distortion_mse_loss(x, l):
-    noise = torch.empty(x.shape, device=x.device).uniform_(-1, 1) / 127.5
+    noise = torch.empty(x.shape, device=x.device).uniform_(-1, 1) / 255.
     return torch.mean(torch.square(x + noise - l), dim=[1, 2, 3])
 
 
@@ -194,7 +194,7 @@ class DmolNet(nn.Module):
         xhat = xhat.detach().cpu().numpy()
         xhat = np.minimum(np.maximum(0.0, xhat), 255.0).astype(np.uint8)
         if return_logscales_probs:
-            return xhat, log_scales, probs
+            return xhat, log_scales.detach().cpu().numpy(), probs.detach().cpu().numpy()
         return xhat
 
 
@@ -205,8 +205,7 @@ class DistortionNet(nn.Module):
         self.width = H.width
         self.out_conv = get_conv(H.width, 3, kernel_size=1, stride=1, padding=0)
 
-    # TODO: refactor it, nll was named like in class higher
-    def nll(self, px_z, x):
+    def mse(self, px_z, x):
         return distortion_mse_loss(x=x, l=self.forward(px_z))
 
     def forward(self, px_z):
@@ -218,4 +217,6 @@ class DistortionNet(nn.Module):
         xhat = (im + 1.0) * 127.5
         xhat = xhat.detach().cpu().numpy()
         xhat = np.minimum(np.maximum(0.0, xhat), 255.0).astype(np.uint8)
+        if return_logscales_probs:
+            return xhat, np.zeros_like(xhat), np.ones_like(xhat)
         return xhat

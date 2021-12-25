@@ -122,6 +122,7 @@ def add_vae_arguments(parser):
     ## mind bits article
     parser.add_argument('--gamma', type=float, default=None)
 
+
     parser.add_argument('--enc_blocks', type=str, default=None)
     parser.add_argument('--dec_blocks', type=str, default=None)
     parser.add_argument('--zdim', type=int, default=16)
@@ -132,9 +133,15 @@ def add_vae_arguments(parser):
     parser.add_argument('--no_bias_above', type=int, default=64)
     parser.add_argument('--scale_encblock', action="store_true")
 
+    # Commands
+    parser.add_argument('--train_model', action="store_true")
     parser.add_argument('--test_eval', action="store_true")
     parser.add_argument('--draw_orig_samples', action="store_true")
     parser.add_argument('--draw_uncond_samples', action="store_true")
+    parser.add_argument('--draw_test_samples', action="store_true")
+    # type of VAE
+    parser.add_argument('--vae_type', type=str, default='simple')
+
     parser.add_argument('--warmup_iters', type=float, default=0)
 
     parser.add_argument('--num_mixtures', type=int, default=10)
