@@ -17,9 +17,13 @@ from contextlib import contextmanager
 import torch.distributed as dist
 from torch import nn
 from apex.optimizers import FusedAdam as AdamW
-from vae import VAE
+from vae import SimpleVAE, PrimaryVAE
 from torch.nn.parallel.distributed import DistributedDataParallel
 
+VAE_TYPES = {
+    "simple": SimpleVAE,
+    "primary": PrimaryVAE,
+}
 
 class ConstantMult(nn.Module):
     """Custom Pytorch model for gradient optimization.
@@ -165,6 +169,7 @@ def restore_log(path, local_rank, mpi_size):
 
 
 def load_vaes(H, logprint):
+    VAE = VAE_TYPES[H.vae_type]
     vae = VAE(H)
     if H.restore_path:
         logprint(f'Restoring vae from {H.restore_path}')

@@ -185,11 +185,7 @@ class Decoder(HModule):
         self.resolutions = sorted(resos)
         self.dec_blocks = nn.ModuleList(dec_blocks)
         self.bias_xs = nn.ParameterList([nn.Parameter(torch.zeros(1, self.widths[res], res, res)) for res in self.resolutions if res <= H.no_bias_above])
-        self.gamma = H.gamma
-        if H.gamma is not None:
-            self.out_net = DistortionNet(H)
-        else:
-            self.out_net = DmolNet(H)
+        self.out_net = DmolNet(H)
         self.gain = nn.Parameter(torch.ones(1, H.width, 1, 1))
         self.bias = nn.Parameter(torch.zeros(1, H.width, 1, 1))
         self.final_fn = lambda x: x * self.gain + self.bias
@@ -228,7 +224,7 @@ class Decoder(HModule):
         return xs[self.H.image_size]
 
 
-class VAE(HModule):
+class SimpleVAE(HModule):
     def build(self):
         self.encoder = Encoder(self.H)
         self.decoder = Decoder(self.H)
@@ -237,6 +233,39 @@ class VAE(HModule):
         activations = self.encoder.forward(x)
         px_z, stats = self.decoder.forward(activations)
         distortion_per_pixel = self.decoder.out_net.nll(px_z, x_target)
+        rate_per_pixel = torch.zeros_like(distortion_per_pixel)
+        ndims = np.prod(x.shape[1:])
+        for statdict in stats:
+            rate_per_pixel += statdict['kl'].sum(dim=(1, 2, 3))
+        rate_per_pixel /= ndims
+
+        elbo = (distortion_per_pixel + rate_per_pixel).mean()
+        return dict(elbo=elbo, distortion=distortion_per_pixel.mean(), rate=rate_per_pixel.mean())
+
+    def forward_get_latents(self, x):
+        activations = self.encoder.forward(x)
+        _, stats = self.decoder.forward(activations, get_latents=True)
+        return stats
+
+    def forward_uncond_samples(self, n_batch, t=None, return_logscales_probs=False):
+        px_z = self.decoder.forward_uncond(n_batch, t=t)
+        return self.decoder.out_net.sample(px_z, return_logscales_probs=return_logscales_probs)
+
+    def forward_samples_set_latents(self, n_batch, latents, t=None):
+        px_z = self.decoder.forward_manual_latents(n_batch, latents, t=t)
+        return self.decoder.out_net.sample(px_z)
+
+
+class PrimaryVAE(HModule):
+    def build(self):
+        self.encoder = Encoder(self.H)
+        self.decoder = Decoder(self.H)
+        self.decoder.out_net = DistortionNet(self.H)
+
+    def forward(self, x, x_target):
+        activations = self.encoder.forward(x)
+        px_z, stats = self.decoder.forward(activations)
+        distortion_per_pixel = self.decoder.out_net.mse(px_z, x_target)
         rate_per_pixel = torch.zeros_like(distortion_per_pixel)
         ndims = np.prod(x.shape[1:])
         for statdict in stats:
