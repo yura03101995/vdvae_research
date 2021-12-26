@@ -12,6 +12,22 @@ class Hyperparams(dict):
         self[attr] = value
 
 
+svhn = Hyperparams()
+svhn.width = 384
+svhn.lr = 0.0002
+svhn.zdim = 16
+svhn.wd = 0.01
+svhn.dec_blocks = "1x1,4m1,4x2,8m4,8x5,16m8,16x10,32m16,32x21"
+svhn.enc_blocks = "32x11,32d2,16x6,16d2,8x6,8d2,4x3,4d4,1x3"
+svhn.warmup_iters = 100
+svhn.dataset = 'svhn'
+svhn.n_batch = 16
+svhn.ema_rate = 0.99
+svhn.adam_beta1 = 0.9
+svhn.adam_beta2 = 0.999
+HPARAMS_REGISTRY['svhn'] = svhn
+
+
 cifar10 = Hyperparams()
 cifar10.width = 384
 cifar10.lr = 0.0002

@@ -6,6 +6,7 @@ from torch.utils.data import TensorDataset
 from torchvision.datasets import ImageFolder
 import torchvision.transforms as transforms
 from sklearn.model_selection import train_test_split
+import scipy.io as sio
 
 def read_data(H):
     if H.dataset == 'imagenet32':
@@ -38,6 +39,12 @@ def read_data(H):
         H.image_channels = 3
         shift = -120.63838
         scale = 1. / 64.16736
+    elif H.dataset == 'svhn':
+        (trX, _), (vaX, _), (teX, _) = svhn(H.data_root, one_hot=False)
+        H.image_size = 32
+        H.image_channels = 3
+        shift = -115.1118
+        scale = 1. / 50.8193
     else:
         raise ValueError('unknown dataset: ', H.dataset)
     return trX, vaX, teX, shift, scale
@@ -151,6 +158,26 @@ def ffhq256(data_root):
     valid = trX[tr_va_split_indices[-7000:]]
     # we did not significantly tune hyperparameters on ffhq-256, and so simply evaluate on the test set
     return train, valid, valid
+
+
+def svhn(data_root, one_hot=True):
+    tr_data = sio.loadmat(os.path.join(data_root, "svhn", "train_32x32.mat"))
+    te_data = sio.loadmat(os.path.join(data_root, "svhn", "test_32x32.mat"))
+    trX = tr_data['X'].transpose(3, 0, 1, 2)
+    trY = tr_data['y'][:, 0]
+    teX = te_data['X'].transpose(3, 0, 1, 2)
+    teY = te_data['y'][:, 0]
+
+    trX, vaX, trY, vaY = train_test_split(trX, trY, test_size=5000, random_state=11172018)
+    if one_hot:
+        trY = np.eye(10, dtype=np.float32)[trY]
+        vaY = np.eye(10, dtype=np.float32)[vaY]
+        teY = np.eye(10, dtype=np.float32)[teY]
+    else:
+        trY = np.reshape(trY, [-1, 1])
+        vaY = np.reshape(vaY, [-1, 1])
+        teY = np.reshape(teY, [-1, 1])
+    return (trX, trY), (vaX, vaY), (teX, teY)
 
 
 def cifar10(data_root, one_hot=True):
