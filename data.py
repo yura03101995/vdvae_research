@@ -43,8 +43,8 @@ def read_data(H):
         (trX, _), (vaX, _), (teX, _) = svhn(H.data_root, one_hot=False)
         H.image_size = 32
         H.image_channels = 3
-        shift = -120.63838
-        scale = 1. / 64.16736
+        shift = -115.1118
+        scale = 1. / 50.8193
     else:
         raise ValueError('unknown dataset: ', H.dataset)
     return trX, vaX, teX, shift, scale
