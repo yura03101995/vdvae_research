@@ -271,10 +271,10 @@ def run_draw_test_samples(H, ema_vae, data_valid, preprocess_fn):
 def main():
     H, logprint = set_up_hyperparams()
     H, data_train, data_valid_or_test, preprocess_fn = set_up_data(H)
-    vae, ema_vae = load_vaes(H, logprint)
-
     if H.draw_orig_samples:
         run_draw_orig_samples(H)
+        
+    vae, ema_vae = load_vaes(H, logprint)
 
     if H.draw_uncond_samples:
         run_draw_uncond_samples(H, ema_vae, logprint)
